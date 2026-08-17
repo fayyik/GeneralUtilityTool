@@ -1,0 +1,103 @@
+{
+    "pages": [
+        {
+            "path": "pages/index/index"
+        },
+        {
+            "path": "pages/activity/create"
+        },
+        {
+            "path": "pages/activity/detail"
+        },
+        {
+            "path": "pages/activity/index"
+        },
+        {
+            "path": "pages/group/detail"
+        },
+        {
+            "path": "pages/group/create"
+        },
+        {
+            "path": "pages/group/index"
+        },
+        {
+            "path": "pages/group/member"
+        },
+        {
+            "path": "pages/login/index"
+        },
+        {
+            "path": "pages/map/chooseLocation"
+        },
+        {
+            "path": "pages/personal/index"
+        },
+        {
+            "path": "pages/personal/info"
+        }
+    ],
+    "subPackages": [
+        {
+            "root": "pagesB",
+            "pages": [
+                {
+                    "path": "groupSetting/activityAlbum"
+                },
+                {
+                    "path": "groupSetting/activityRecord"
+                },
+                {
+                    "path": "groupSetting/attendance"
+                },
+                {
+                    "path": "groupSetting/index",
+                    "style": {
+                        "navigationStyle": "default",
+                        "navigationBarTitleText": "俱乐部设置"
+                    }
+                },
+                {
+                    "path": "groupSetting/transfer",
+                    "style": {
+                        "navigationStyle": "default",
+                        "navigationBarTitleText": "俱乐部转让"
+                    }
+                }
+            ]
+        }
+    ],
+    "tabBar": {
+        "custom": true,
+        "list": [
+            {
+                "pagePath": "pages/index/index",
+                "text": "羽友圈"
+            },
+            {
+                "pagePath": "pages/group/index",
+                "text": "羽友圈"
+            },
+            {
+                "pagePath": "pages/activity/create",
+                "text": "羽友圈"
+            },
+            {
+                "pagePath": "pages/activity/index",
+                "text": "羽友圈"
+            },
+            {
+                "pagePath": "pages/personal/index",
+                "text": "羽友圈"
+            }
+        ]
+    },
+    "globalStyle": {
+        "navigationBarTextStyle": "black",
+        "navigationBarTitleText": "羽友圈",
+        "navigationBarBackgroundColor": "#F8F8F8",
+        "backgroundColor": "#F8F8F8",
+        "navigationStyle": "custom"
+    },
+    "uniIdRouter": {}
+}

@@ -1,0 +1,331 @@
+page,
+.default-theme {
+    --main-color: #40EDF0;
+    --left-linear: #40EDF0;
+    --right-linear: #C6FD57;
+	--light-color1: #A8F5F7;
+	--light-color2: #CCFAFC;
+	--light-color3: #E6FAFB;
+    --text-dark: #171717;
+	--text-light: #9E9E9E;
+	--text-empty: #999999;
+	--text-btn: #1E293B;
+	--icon-color: #B0B0B0;
+	--border-color: #E0F2F3;
+	--disabled-color: #A2A4A5;
+	--padding-size: 40rpx;
+	--box-shadow: 0 4rpx 12rpx rgba(176, 176, 176, 0.16);
+	--rgb-color-left: 64, 237, 240;
+	--rgb-color-right: 198, 253, 87;
+}
+
+// 英文语言类
+.en_lang {
+    @for $i from 10 through 36 {
+        --f#{$i}: #{$i}rpx;
+    }
+}
+// 中文比英文大两号
+// 中文语言类，使用前缀并调整值
+.zh_lang {
+    @for $i from 10 through 36 {
+        --f#{$i}: #{($i + 2)}rpx; // 添加了前缀并增加了2rpx
+    }
+}
+
+page {
+    font-family: -apple-system, 'PingFang SC',BlinkMacSystemFont, 'Helvetica Neue', Helvetica,
+    Segoe UI, Arial, Roboto, 'Hiragino Sans GB', sans-serif;
+}
+
+// @font-face {
+// 	font-family: 'JingNanBold';
+// 	src: url('../font/JingNan-Bold.TTF') format('opentype');
+// }
+
+// .font-bold {
+// 	font-weight: bold;
+// 	font-family: JingNanBold, 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+// }
+
+.page-container {
+    width: 100%;
+    min-height: 100vh;
+    box-sizing: border-box;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.8)),
+        linear-gradient(135deg, var(--left-linear), var(--right-linear));
+}
+
+.location-popup {
+	display: flex;
+    align-items: start;
+    justify-content: center;
+    height: 100%;
+
+	& > .select-area-wrap {
+		display: flex;
+		position: fixed;
+		width: 750rpx;
+		margin-top: 128rpx;
+		padding: 40rpx 0;
+		background-color: var(--bg-popup);
+
+		.inner-wrap {
+			width: 50%;
+			display: flex;
+			flex-direction: column;
+			justify-content: flex-start;
+			overflow: hidden;
+			overflow-y: scroll;
+			padding-left: 40px;
+		}
+
+		.top-wrap {
+			display: flex;
+			margin-bottom: 20rpx;
+
+			.text {
+				font-weight: bold;
+				margin-left: 16rpx;
+				color: var(--text-dark);
+			}
+		}
+
+		.select-wrap {
+			max-height: calc(100vh - 400rpx);
+			overflow: auto;
+
+			.select-item {
+				display: flex;
+				align-items: center;
+				margin-bottom: 20rpx;
+
+				.circle {
+					min-width: 40rpx;
+					min-height: 40rpx;
+					width: 40rpx;
+					height: 40rpx;
+					margin-right: 30rpx;
+					background: #FFFFFF;
+					border-radius: 50%;
+					border: 2px solid #000000;
+				}
+
+				.name {
+					font-weight: bold;
+					color: var(--text-dark);
+				}
+
+				&.select {
+					.circle {
+						background: var(--main-color);
+					}
+				}
+			}
+		}
+
+		.border {
+			position: absolute;
+			top: 40rpx;
+			left: 50%;
+			width: 2px;
+			height: calc(100% - 80rpx);
+			background: #000000;
+		}
+	}
+}
+
+:deep(.uv-toolbar__confirm__wrapper) {
+	.uv-toolbar__wrapper__confirm {
+		color: var(--main-color) !important;
+	}
+}
+
+:deep(.uv-calendar__box) {
+	.uv-calendar__weeks {
+		.uv-calendar__weeks-item {
+			.uv-calendar-item--isDay {
+				background-color: var(--main-color) !important;
+			}
+
+			.uv-calendar-item--isDay-text {
+				color: var(--main-color) !important;
+			}
+			
+			.uv-calendar-item--isDay-text.uv-calendar-item--isDay {
+				color: var(--text-dark) !important;
+			}
+		}
+
+		.uv-calendar-item__weeks-box.uv-calendar-item--checked {
+			background-color: var(--main-color) !important;
+		}
+		.uv-calendar-item__weeks-box-text.uv-calendar-item--checked {
+			background-color: var(--main-color) !important;
+		}
+		.uv-calendar-item__weeks-lunar-text {
+			text-align: center;
+		}
+	}
+}
+
+.room-info {
+	position: relative;
+	display: flex;
+	align-items: center;
+	margin-bottom: 40rpx;
+	padding: 40rpx;
+	color: var(--text-dark);
+	background: var(--main-color);
+	border-radius: 32rpx 32rpx 20rpx 20rpx;
+
+	.info-left {
+		padding-right: 40rpx;
+		width: 280rpx;
+		font-size: 60rpx;
+		font-weight: bold;
+		line-height: 1.2;
+		word-break: break-all;
+	}
+
+	.info-right {
+		flex: 1;
+		font-size: 24rpx;
+		line-height: 1.5;
+
+		.info-item {
+			display: flex;
+			flex-wrap: wrap;
+
+			.inner-btn {
+				padding: 4rpx 16rpx;
+				margin-right: 10rpx;
+				width: fit-content;
+				color: var(--text-dark);
+				font-size: 20rpx;
+				border-radius: 10px;
+				margin-top: 20rpx;
+				background-color: rgba(37, 121, 101, 0.4);
+			}
+		}
+	}
+
+	&::before {
+		content: "";
+		position: absolute;
+		top: -7px;
+		left: 4px;
+		width: 100%;
+		height: 14px;
+		background: radial-gradient(#F5F5EF 0px, #F5F5EF 5px, transparent 5px, transparent);
+		background-size: 14px 14px;
+		z-index: 9;
+	}
+}
+
+.time-picker-main {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+
+	.item-wrap {
+		margin-bottom: 30rpx;
+	}
+
+	.name {
+		display: flex;
+		align-items: center;
+		margin: 0 0 20rpx 10rpx;
+
+		.left {
+			margin-right: 6px;
+			width: 10rpx;
+			height: 26rpx;
+			border-radius: 10px;
+			background: var(--btn-color3);
+		}
+
+		.right {
+			color: #BEC2CE;
+		}
+	}
+
+	.hour-wrap {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+
+		.hour-item {
+			width: 48%;
+			padding: 16rpx 0;
+			margin-bottom: 20rpx;
+			text-align: center;
+			border-radius: 4px;
+			border: 1px solid rgba(216, 216, 216, 0.4);
+
+			&.select {
+				background: rgb(159, 255, 232, 0.5);
+			}
+
+			&.disabled {
+				color: rgba(90, 122, 107, 0.5);
+				background: rgba(90, 122, 107, 0.2);
+			}
+		}
+	}
+
+	.select-date-wrap {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 20rpx 30rpx;
+		border-radius: 4px;
+		border: 1px solid rgba(216, 216, 216, 0.4);
+	}
+
+	.btn {
+		padding: 20rpx 0;
+		color: var(--text-dark);
+		text-align: center;
+		border-radius: 40rpx;
+		letter-spacing: 6px;
+		background: linear-gradient(180deg, var(--left-linear), var(--right-linear));
+	}
+
+	.select-dropdown {
+		position: relative;
+
+		.top-wrap {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 20rpx 30rpx;
+			border-radius: 4px;
+			border: 1px solid rgba(216, 216, 216, 0.4);
+		}
+
+		.dropdown-wrap {
+			position: absolute;
+			top: calc(100% + 10px);
+			left: 0;
+			width: 100%;
+			background: #FFFFFF;
+			border: 1px solid rgba(216, 216, 216, 0.4);
+			box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.12);
+
+			.dropdown-item {
+				box-sizing: border-box;
+				width: 100%;
+				padding: 24rpx 30rpx;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+
+				&.select {
+					font-weight: bold;
+					color: var(--right-linear);
+				}
+			}
+		}
+	}
+}
