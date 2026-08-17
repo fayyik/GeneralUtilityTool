@@ -3,16 +3,17 @@
         <Navbar></Navbar>
         <view class="info-wrap">
             <view class="info-card">
-                <view class="avatar-wrap">
-                    <image class="avatar" mode="aspectFit" :src="state.userInfo.avatar">
-                    </image>
-                    <uv-button open-type="chooseAvatar" @chooseavatar="onChooseAvatar">
-                    </uv-button>
+                <view class="avatar-wrap" @click="chooseAvatar">
+                    <image class="avatar" v-if="state.userInfo.avatar" mode="aspectFill" :src="state.userInfo.avatar"></image>
+                    <view class="avatar-default" v-else>
+                        <uv-icon name="account-fill" size="60" color="#FFFFFF"></uv-icon>
+                    </view>
+                    <view class="avatar-tip">点击更换头像</view>
                 </view>
+
                 <view class="info-row">
-                    <text class="label">姓名</text>
-                    <uv-input v-model="state.userInfo.name" type="nickname" border="none"
-                        :placeholder="$t('common.nickname')" @blur="getNickName" />
+                    <text class="label">昵称</text>
+                    <input class="value" v-model="state.userInfo.nickname" placeholder="请输入昵称" />
                 </view>
 
                 <view class="info-row" @click="openPicker('sex')">
@@ -25,61 +26,39 @@
 
                 <view class="info-row" @click="openPicker('birthDate')">
                     <text class="label">出生年月</text>
-                    <text class="value">{{ state.userInfo.year }}</text>
-                </view>
-
-                <view class="info-row">
-                    <text class="label">个人介绍</text>
-                    <uv-textarea v-model="state.userInfo.desc" border="none" placeholder="个人介绍..."></uv-textarea>
+                    <text class="value">{{ state.userInfo.birthDate || '未设置' }}</text>
                 </view>
 
                 <view class="info-row column">
-                    <text class="label">自评标签</text>
-
-                    <view class="tag-container">
-                        <view class="tag-item" v-for="(item, index) in state.evaluateTagList" :key="index" :class="{ active: state.userInfo.selfEvaluate.includes(item) }" @click="toggleEvaluateTag(item)">
-                            {{ item }}
-                        </view>
-
-                        <view class="tag-add">
-                            <input v-model="state.newEvaluateTag" placeholder="自定义" confirm-type="done"
-                                @confirm="addEvaluateTag" />
-                            <view class="add-btn" @click="addEvaluateTag">+</view>
-                        </view>
-                    </view>
+                    <text class="label">个人介绍</text>
+                    <uv-textarea v-model="state.userInfo.desc" border="none" placeholder="个人介绍..."></uv-textarea>
                 </view>
             </view>
 
-            <view class="btn-edit" @click="editUserInfo">修改资料</view>
+            <view class="btn-edit" @click="saveUserInfo">保存</view>
         </view>
 
-        <uv-picker ref="sexPicker" :confirmText="$t('common.confirm')" :cancelText="$t('common.cancel')"
+        <uv-picker ref="sexPicker" :confirmText="'确定'" :cancelText="'取消'"
             :columns="state.sexColumns" keyName="label" @confirm="handleSelect('sex', $event)"></uv-picker>
         <uv-calendars ref="calendars" :color="themeInfo.activeColor" @confirm="handleSelect('birthDate', $event)" />
     </view>
 </template>
 
 <script setup>
-import { ref, reactive, watchEffect, onMounted } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 
 import { useMainStore } from '@/store/index';
-const { themeInfo, storeState, getUserInfo } = useMainStore();
-
-import { getPublicApi } from '@/api/public.js';
-const publicApi = getPublicApi();
-import { getCustomerApi } from '@/api/customer.js';
-const customerApi = getCustomerApi();
+const { themeInfo, getUserInfo, setUserInfo } = useMainStore();
 
 import Navbar from '@/components/Navbar.vue';
 
 const state = reactive({
     userInfo: {
-        name: '',
+        nickname: '',
         avatar: '',
         desc: '',
         sex: 0,
-        year: '',
-        selfEvaluate: []
+        birthDate: '',
     },
     sexText: '',
     sexColumns: [
@@ -88,35 +67,20 @@ const state = reactive({
             { id: 2, label: '女' },
         ]
     ],
-    evaluateTagList: ['中羽一级', '中羽二级', '中羽三级', '中羽四级',],
-    newEvaluateTag: ''
 });
 
 const sexPicker = ref(null);
 const calendars = ref(null);
 
 onMounted(() => {
-    const userInfo = storeState.userInfo;
+    const userInfo = getUserInfo();
     state.userInfo = {
-        customerId: userInfo.id,
-        name: userInfo.name,
-        avatar: userInfo.avatar,
-        desc: userInfo.desc,
-        sex: userInfo.sex,
-        year: 1025,
-        isShowHis: userInfo.isShowHis,
-        selfEvaluate: userInfo.selfEvaluate,
-        playPosition: userInfo.playPosition
-    }
-    userInfo?.selfEvaluate.forEach(tag => {
-        if (!state.evaluateTagList.includes(tag)) {
-            state.evaluateTagList.push(tag);
-        }
-    });
-});
-
-watchEffect(() => {
-    state.sexText = state.sexColumns[0].find(item => item.id == state.userInfo.sex)?.label;
+        nickname: userInfo.nickname || '',
+        avatar: userInfo.avatar || '',
+        desc: userInfo.desc || '',
+        sex: userInfo.sex || 0,
+        birthDate: userInfo.birthDate || '',
+    };
 });
 
 const openPicker = (type) => {
@@ -128,82 +92,36 @@ const openPicker = (type) => {
 }
 
 const handleSelect = (type, e) => {
-    console.log(e);
     if (type == 'sex') {
         state.userInfo.sex = e.value[0].id;
     } else if (type == 'birthDate') {
-        state.userInfo.year = e.fulldate;
+        state.userInfo.birthDate = e.fulldate;
     }
 }
 
-const getNickName = (e) => {
-    if (e) state.userInfo.name = e;
-}
-
-const onChooseAvatar = async (e) => {
-    const url = await UploaderImage(e.avatarUrl);
-    state.userInfo.avatar = url;
-}
-
-const UploaderImage = async (url) => {
-    return 'https://q5.itc.cn/q_70/images03/20240817/48e9a1755ca046b588fb94404ce83e16.jpeg';
-    let imgUrl = '';
-    try {
-        uni.showLoading();
-        const { code, data } = await publicApi.UploaderImage({ filePath: url });
-        if (code === 200) {
-            imgUrl = saveImageUrl(data.url);
-        }
-        uni.hideLoading();
-    } catch (error) {
-        uni.hideLoading();
-    }
-    return imgUrl;
-}
-
-const editUserInfo = () => {
-    uni.showLoading({
-        mask: true
+const chooseAvatar = () => {
+    uni.chooseImage({
+        count: 1,
+        sizeType: ['compressed'],
+        success: (res) => {
+            state.userInfo.avatar = res.tempFilePaths[0];
+        },
     });
-    customerApi.UpdateCustomer({
+}
+
+const saveUserInfo = () => {
+    const userInfo = {
+        ...getUserInfo(),
         ...state.userInfo,
-        selfEvaluate: state.userInfo.selfEvaluate?.length ? state.userInfo.selfEvaluate.join(',') : ''
-    }).then(res => {
-        if (res.code == 200) {
-            uni.showToast({
-                title: '修改成功',
-                icon: 'none'
-            });
-            getUserInfo();
-        }
-    }).finally(() => {
-        uni.hideLoading();
+    };
+    setUserInfo(userInfo);
+    uni.showToast({
+        title: '保存成功',
+        icon: 'none'
     });
-}
-
-const toggleEvaluateTag = (tag) => {
-    const index = state.userInfo.selfEvaluate.indexOf(tag);
-    if (index > -1) {
-        state.userInfo.selfEvaluate.splice(index, 1);
-    } else {
-        state.userInfo.selfEvaluate.push(tag);
-    }
-}
-
-// 新增自定义标签
-const addEvaluateTag = () => {
-    const tag = state.newEvaluateTag.trim();
-    if (!tag) return;
-
-    if (!state.evaluateTagList.includes(tag)) {
-        state.evaluateTagList.push(tag);
-    }
-
-    if (!state.userInfo.selfEvaluate.includes(tag)) {
-        state.userInfo.selfEvaluate.push(tag);
-    }
-
-    state.newEvaluateTag = '';
+    setTimeout(() => {
+        uni.navigateBack();
+    }, 500);
 }
 </script>
 
@@ -224,28 +142,30 @@ const addEvaluateTag = () => {
         overflow: hidden;
 
         .avatar-wrap {
-            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20rpx;
 
-            .avatar {
+            .avatar,
+            .avatar-default {
                 width: 180rpx;
                 height: 180rpx;
-                border-radius: 32rpx;
+                border-radius: 50%;
                 box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, 0.12);
-                background: #FFFFFF;
+                background: linear-gradient(135deg, var(--left-linear), var(--right-linear));
             }
 
-            :deep(.uv-button-wrapper) {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                opacity: 0;
+            .avatar-default {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
 
-                .uv-button {
-                    width: 100%;
-                    height: 100%;
-                }
+            .avatar-tip {
+                margin-top: 16rpx;
+                font-size: 24rpx;
+                color: var(--text-light);
             }
         }
 
@@ -289,57 +209,11 @@ const addEvaluateTag = () => {
                 flex-direction: column;
                 align-items: flex-start;
             }
-
-            .tag-container {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 16rpx;
-                margin-top: 20rpx;
-
-                .tag-item {
-                    padding: 12rpx 24rpx;
-                    border-radius: 32rpx;
-                    font-size: 26rpx;
-                    background-color: #f5f5f5;
-                    color: #333;
-
-                    &.active {
-                        background: var(--left-linear);
-                        color: #FFFFFF;
-                    }
-                }
-
-                .tag-add {
-                    display: flex;
-                    align-items: center;
-                    height: 56rpx;
-                    padding: 0 16rpx;
-                    border: 1rpx dashed #CCCCCC;
-                    border-radius: 32rpx;
-
-                    input {
-                        width: 120rpx;
-                        font-size: 26rpx;
-                    }
-
-                    .add-btn {
-                        margin-left: 8rpx;
-                        font-size: 32rpx;
-                        color: var(--right-linear);
-                    }
-                }
-            }
-        }
-
-        :deep(.uv-input) {
-            input {
-                font-size: 16px !important;
-                text-align: right !important;
-            }
         }
 
         :deep(.uv-textarea) {
             padding: 0;
+            margin-top: 20rpx;
 
             textarea {
                 font-size: 16px !important;

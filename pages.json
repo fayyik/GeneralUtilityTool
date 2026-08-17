@@ -4,67 +4,46 @@
             "path": "pages/index/index"
         },
         {
-            "path": "pages/activity/create"
-        },
-        {
-            "path": "pages/activity/detail"
-        },
-        {
-            "path": "pages/activity/index"
-        },
-        {
-            "path": "pages/group/detail"
-        },
-        {
-            "path": "pages/group/create"
-        },
-        {
-            "path": "pages/group/index"
-        },
-        {
-            "path": "pages/group/member"
-        },
-        {
-            "path": "pages/login/index"
-        },
-        {
-            "path": "pages/map/chooseLocation"
-        },
-        {
             "path": "pages/personal/index"
         },
         {
             "path": "pages/personal/info"
-        }
-    ],
-    "subPackages": [
+        },
         {
-            "root": "pagesB",
-            "pages": [
-                {
-                    "path": "groupSetting/activityAlbum"
-                },
-                {
-                    "path": "groupSetting/activityRecord"
-                },
-                {
-                    "path": "groupSetting/attendance"
-                },
-                {
-                    "path": "groupSetting/index",
-                    "style": {
-                        "navigationStyle": "default",
-                        "navigationBarTitleText": "俱乐部设置"
-                    }
-                },
-                {
-                    "path": "groupSetting/transfer",
-                    "style": {
-                        "navigationStyle": "default",
-                        "navigationBarTitleText": "俱乐部转让"
-                    }
-                }
-            ]
+            "path": "pages/tools/pomodoro/index",
+            "style": {
+                "navigationBarTitleText": "番茄时钟"
+            }
+        },
+        {
+            "path": "pages/tools/pomodoro/task",
+            "style": {
+                "navigationBarTitleText": "专注任务"
+            }
+        },
+        {
+            "path": "pages/tools/pomodoro/stats",
+            "style": {
+                "navigationBarTitleText": "专注统计"
+            }
+        },
+        {
+            "path": "pages/tools/pomodoro/settings",
+            "style": {
+                "navigationBarTitleText": "番茄设置"
+            }
+        },
+        {
+            "path": "pages/tools/calendar/index",
+            "style": {
+                "navigationBarTitleText": "节假日日历"
+            }
+        },
+        {
+            "path": "pages/tools/calendar/events",
+            "style": {
+                "navigationBarTitleText": "倒数纪念日"
+            }
         }
     ],
     "tabBar": {
@@ -72,29 +51,17 @@
         "list": [
             {
                 "pagePath": "pages/index/index",
-                "text": "羽友圈"
-            },
-            {
-                "pagePath": "pages/group/index",
-                "text": "羽友圈"
-            },
-            {
-                "pagePath": "pages/activity/create",
-                "text": "羽友圈"
-            },
-            {
-                "pagePath": "pages/activity/index",
-                "text": "羽友圈"
+                "text": "首页"
             },
             {
                 "pagePath": "pages/personal/index",
-                "text": "羽友圈"
+                "text": "我的"
             }
         ]
     },
     "globalStyle": {
         "navigationBarTextStyle": "black",
-        "navigationBarTitleText": "羽友圈",
+        "navigationBarTitleText": "万能工具",
         "navigationBarBackgroundColor": "#F8F8F8",
         "backgroundColor": "#F8F8F8",
         "navigationStyle": "custom"

@@ -1,17 +1,10 @@
 <script>
-import { useMainStore } from '@/store/index.js';
-
-import { getCustomerApi } from '@/api/customer.js';
-const customerApi = getCustomerApi();
-
 export default {
 	globalData: {
 		statusBarHeight: 0,
 		navbarHeight: 0,
 	},
-	onLaunch: async function () {
-		const { getUserInfo, setToken, logOut } = useMainStore();
-
+	onLaunch: function () {
 		// #ifdef MP-WEIXIN
 		// 状态栏高度
 		const statusBarHeight = uni.getSystemInfoSync().statusBarHeight;
@@ -21,38 +14,6 @@ export default {
 		// 总体高度 = 状态栏高度 + 导航栏高度
 		this.globalData.navbarHeight = (barHeight || 40) + statusBarHeight;
 		this.globalData.statusBarHeight = statusBarHeight || 20;
-		// #endif
-
-		// #ifdef MP-WEIXIN
-		// 有 openid 直接登陆
-		let openId = uni.getStorageSync('openId');
-		if (openId) {
-			wx.login({
-				async success(res) {
-					customerApi
-						.AuthorizedLogin({
-							openId,
-							code: res.code
-						})
-						.then((res) => {
-							uni.hideLoading();
-							if (res.code == 200) {
-								// uni.$emit('loginSuccess')
-								setToken(res.data.token);
-								getUserInfo();
-							} else {
-								logOut();
-							}
-						}).catch((err) => {
-							logOut();
-						})
-				},
-				fail: (err) => {
-					reject(err)
-					console.error('wx.login调用失败：', err);
-				},
-			});
-		}
 		// #endif
 	},
 

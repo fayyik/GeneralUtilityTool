@@ -2,12 +2,9 @@
     <uni-tabbar class="custom-tabbar uni-tabbar">
         <div class="tabbar-item" v-for="item in tabItems" :key="item.id" @click="handleTabItemTap(item)"
             :class="{ 'selected': selected === item.id }">
-            <div class="tabbar-inner center-item" v-if="item.id == 2">
-                <div class="circle-wrap font-bold">{{ item.label }}</div>
-            </div>
-            <div class="tabbar-inner" v-else>
+            <div class="tabbar-inner">
                 <div class="icon-wrap">
-                    <uv-icon v-if="showIcon" :name="item.icon" custom-prefix="custom-icon" :size="item.size || 20"
+                    <uv-icon :name="item.icon" :size="22"
                         :color="selected === item.id ? themeInfo.activeColor : themeInfo.iconColor"></uv-icon>
                 </div>
                 <div class="label-wrap font-bold">
@@ -23,10 +20,6 @@ import { useMainStore } from "@/store/index.js";
 const { themeInfo } = useMainStore();
 
 const props = defineProps({
-    showIcon: {
-        type: Boolean,
-        default: true,
-    },
     selected: {
         type: Number,
         default: 0,
@@ -37,52 +30,18 @@ const tabItems = [
     {
         id: 0,
         label: "首页",
-        icon: "home1",
+        icon: "home-fill",
         pagePath: "pages/index/index",
     },
     {
         id: 1,
-        label: "俱乐部",
-        icon: "book",
-        pagePath: "pages/group/index",
-    },
-    {
-        id: 2,
-        label: "开场",
-        pagePath: "pages/activity/create",
-    },
-    {
-        id: 3,
-        label: "球局",
-        icon: "unlock",
-        pagePath: "pages/activity/index",
-    },
-    {
-        id: 4,
         label: "我的",
-        icon: "personal",
+        icon: "account-fill",
         pagePath: "pages/personal/index",
     },
 ];
 
 const handleTabItemTap = (item) => {
-    if (item.id == 2) {
-        const token = uni.getStorageSync('token');
-        if (!token) {
-            uni.showModal({
-                title: '提示',
-                content: '是否前往登录 ',
-                success: function (res) {
-                    if (res.confirm) {
-                        uni.navigateTo({
-                            url: '/pages/login/index'
-                        });
-                    }
-                }
-            });
-            return;
-        }
-    }
     uni.switchTab({
         url: `/${item.pagePath}`
     });
@@ -95,9 +54,9 @@ const handleTabItemTap = (item) => {
     bottom: -1px;
     left: 0;
     display: flex;
-    padding: 20rpx;
+    padding: 20rpx 0;
+    padding-bottom: 30rpx;
     width: 100%;
-    height: 140rpx;
     box-sizing: border-box;
     background-color: #FFFFFF;
     border-top: 1px solid #E6E5E5;
@@ -130,14 +89,14 @@ const handleTabItemTap = (item) => {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 30rpx;
-            height: 30rpx;
+            width: 40rpx;
+            height: 40rpx;
         }
 
         .label-wrap {
-            color: var(--text-dark);
-            font-size: 20rpx;
-            margin-top: 8px;
+            color: var(--text-light);
+            font-size: 22rpx;
+            margin-top: 6rpx;
             font-weight: bold;
         }
     }
@@ -145,35 +104,6 @@ const handleTabItemTap = (item) => {
     .tabbar-item.selected {
         .label-wrap {
             color: var(--main-color);
-        }
-
-        &::before {
-            content: '';
-            position: absolute;
-            top: -20rpx;
-            left: 10%;
-            width: 80%;
-            height: 6px;
-            background: var(--main-color);
-            border-radius: 0 0 20px 20px;
-        }
-    }
-
-    .tabbar-inner.center-item {
-        position: relative;
-
-        .circle-wrap {
-            position: absolute;
-            top: -80rpx;
-            width: 120rpx;
-            height: 120rpx;
-            font-size: 32rpx;
-            line-height: 120rpx;
-            border-radius: 80rpx;
-            text-align: center;
-            color: var(--text-dark);
-            font-weight: bold;
-            background: var(--main-color);
         }
     }
 }
