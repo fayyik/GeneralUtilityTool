@@ -44,6 +44,18 @@
             "style": {
                 "navigationBarTitleText": "倒数纪念日"
             }
+        },
+        {
+            "path": "pages/tools/calendar/detail",
+            "style": {
+                "navigationBarTitleText": "纪念日详情"
+            }
+        },
+        {
+            "path": "pages/tools/image/merge",
+            "style": {
+                "navigationBarTitleText": "图片拼接"
+            }
         }
     ],
     "tabBar": {

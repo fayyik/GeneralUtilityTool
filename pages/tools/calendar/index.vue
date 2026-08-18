@@ -55,7 +55,7 @@ import { useMainStore } from '@/store/index';
 const { themeInfo } = useMainStore();
 
 import Navbar from '@/components/Navbar.vue';
-import { getHolidaysByYear, getAvailableYears, getNextHoliday } from '@/config/holidays';
+import { getHolidaysByYear, getAvailableYears, getNextHoliday } from '@/utils/holidays';
 
 const state = reactive({
     year: new Date().getFullYear(),

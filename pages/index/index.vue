@@ -65,7 +65,7 @@ const toolGroups = [
         name: '图片工具',
         desc: '拼接 · 切图',
         tools: [
-            { name: '图片拼接', desc: '多图拼接', icon: 'photo-fill', color: '#FFFFFF', bg: 'linear-gradient(135deg, #FFD08A, #FFA94D)', url: '/pages/tools/image/merge', implemented: false },
+            { name: '图片拼接', desc: '多图拼接', icon: 'photo-fill', color: '#FFFFFF', bg: 'linear-gradient(135deg, #FFD08A, #FFA94D)', url: '/pages/tools/image/merge', implemented: true },
             { name: '九宫格切图', desc: '朋友圈九图', icon: 'grid', color: '#FFFFFF', bg: 'linear-gradient(135deg, #FFA3B1, #FF6B81)', url: '/pages/tools/image/grid', implemented: false },
         ],
     },

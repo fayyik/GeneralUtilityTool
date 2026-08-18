@@ -22,26 +22,33 @@
                 <view class="empty-text">还没有纪念日，点击下方按钮添加</view>
             </view>
 
-            <!-- 纪念日列表 -->
+            <!-- 纪念日列表（分类展示） -->
             <view class="event-list" v-else>
-                <view class="event-card" v-for="event in eventList" :key="event.id" @click="editEvent(event)">
-                    <view class="event-date">
-                        <view class="date-month">{{ dateMonth(event) }}</view>
-                        <view class="date-day">{{ dateDay(event) }}</view>
+                <view class="event-group" v-for="group in groups" :key="group.key">
+                    <view class="group-header">
+                        <view class="group-title">{{ group.title }}</view>
+                        <view class="group-desc">{{ group.desc }}</view>
                     </view>
-                    <view class="event-main">
-                        <view class="event-row">
-                            <view class="event-name">{{ event.name }}</view>
-                            <view class="event-tag" v-if="repeatLabel(event)">{{ repeatLabel(event) }}</view>
+                    <view class="event-card" v-for="event in group.list" :key="event.id" @click="openDetail(event)">
+                        <view class="event-date" :style="dateBg(event)">
+                            <view class="date-icon">{{ event.icon || '❤️' }}</view>
+                            <view class="date-text">{{ dateShort(event) }}</view>
                         </view>
-                        <view class="event-date-text">{{ event.date }}</view>
-                        <view class="event-extra">
-                            <text v-if="anniversaryText(event)">{{ anniversaryText(event) }}</text>
-                            <text v-if="elapsedDays(event) > 0">· 已共度 {{ elapsedDays(event) }} 天</text>
+                        <view class="event-main">
+                            <view class="event-row">
+                                <view class="event-name">{{ event.name }}</view>
+                                <view class="pin-tag" v-if="event.pinned">置顶</view>
+                                <view class="event-tag" v-if="repeatLabel(event)">{{ repeatLabel(event) }}</view>
+                            </view>
+                            <view class="event-date-text">{{ nextDateStr(event) }}</view>
+                            <view class="event-extra">
+                                <text v-if="anniversaryText(event)">{{ anniversaryText(event) }}</text>
+                                <text v-if="repeatOf(event) === 'none' && elapsedDays(event) > 0">· 已共度 {{ elapsedDays(event) }} 天</text>
+                            </view>
                         </view>
-                    </view>
-                    <view class="event-countdown" :class="countClass(event)">
-                        {{ countText(event) }}
+                        <view class="event-countdown" :class="remainOf(event).cls">
+                            {{ remainOf(event).text }}
+                        </view>
                     </view>
                 </view>
             </view>
@@ -80,6 +87,47 @@
                             >{{ opt.label }}</view>
                         </view>
                     </view>
+                    <view class="form-item">
+                        <view class="form-label">图标</view>
+                        <view class="icon-options">
+                            <view
+                                v-for="icon in EVENT_ICONS"
+                                :key="icon"
+                                class="icon-option"
+                                :class="{ active: state.form.icon === icon }"
+                                @click="state.form.icon = icon"
+                            >{{ icon }}</view>
+                        </view>
+                    </view>
+                    <view class="form-item">
+                        <view class="form-label">背景色</view>
+                        <view class="color-options">
+                            <view
+                                v-for="c in EVENT_COLORS"
+                                :key="c.id"
+                                class="color-option"
+                                :class="{ active: state.form.color === c.id }"
+                                :style="colorDot(c)"
+                                @click="state.form.color = c.id"
+                            ></view>
+                        </view>
+                    </view>
+                    <view class="form-item">
+                        <view class="form-label">剩余时间格式</view>
+                        <view class="repeat-options">
+                            <view
+                                v-for="f in EVENT_FORMATS"
+                                :key="f.value"
+                                class="repeat-option"
+                                :class="{ active: state.form.format === f.value }"
+                                @click="state.form.format = f.value"
+                            >{{ f.label }}</view>
+                        </view>
+                    </view>
+                    <view class="form-item row">
+                        <view class="form-label">置顶显示</view>
+                        <uv-switch v-model="state.form.pinned" :activeColor="themeInfo.activeColor" />
+                    </view>
                     <view class="popup-btns">
                         <view class="btn cancel" @click="closePopup">取消</view>
                         <view class="btn save" @click="saveEvent">保存</view>
@@ -92,13 +140,26 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue';
-import { onShow } from '@dcloudio/uni-app';
+import { onShow, onHide, onUnload } from '@dcloudio/uni-app';
 
 import { useMainStore } from '@/store/index';
 const { themeInfo } = useMainStore();
 
 import Navbar from '@/components/Navbar.vue';
 import storage from '@/utils/storage';
+import {
+    EVENT_ICONS,
+    EVENT_COLORS,
+    EVENT_FORMATS,
+    repeatOf,
+    repeatLabel,
+    colorOf,
+    calcDays,
+    elapsedDays,
+    anniversaryText,
+    formatRemain,
+    nextDateStr,
+} from '@/utils/eventUtils';
 
 const state = reactive({
     editing: null,
@@ -106,6 +167,10 @@ const state = reactive({
         name: '',
         date: '',
         repeat: 'yearly',
+        icon: '❤️',
+        color: 'blue',
+        format: 'day',
+        pinned: false,
     },
 });
 
@@ -116,106 +181,68 @@ const repeatOptions = [
     { value: 'yearly', label: '每年' },
 ];
 
-// 兼容旧数据：yearly 字段 -> repeat
-const repeatOf = (event) => event.repeat || (event.yearly ? 'yearly' : 'none');
-
-const repeatLabel = (event) => {
-    const map = { weekly: '每周', monthly: '每月', yearly: '每年' };
-    return map[repeatOf(event)] || '';
-};
-
 const popupRef = ref(null);
 
 const eventList = ref([]);
 
+// hms 格式实时刷新用
+const tick = ref(0);
+let timer = null;
+
 const loadEvents = () => {
     const list = storage.getEvents();
-    // 按距下次天数升序排序（即将到来的在前）
-    list.sort((a, b) => calcDays(a) - calcDays(b));
+    // 兼容旧数据
+    list.forEach(e => {
+        e.repeat = repeatOf(e);
+        if (!e.icon) e.icon = '❤️';
+        if (!e.color) e.color = 'blue';
+        if (!e.format) e.format = 'day';
+        if (!e.pinned) e.pinned = false;
+    });
+    // 置顶优先，其余按距下次天数升序
+    list.sort((a, b) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        return calcDays(a) - calcDays(b);
+    });
     eventList.value = list;
 };
 
-// 计算距下次还有多少天（当天为 0；不重复事件已过则为负）
-const calcDays = (event) => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const repeat = repeatOf(event);
-    if (repeat === 'yearly') {
-        const month = Number(event.date.slice(5, 7)) - 1;
-        const day = Number(event.date.slice(8, 10));
-        let next = new Date(now.getFullYear(), month, day);
-        if (next < today) {
-            next = new Date(now.getFullYear() + 1, month, day);
-        }
-        return Math.round((next - today) / (1000 * 60 * 60 * 24));
-    }
-    if (repeat === 'monthly') {
-        const day = Number(event.date.slice(8, 10));
-        let year = now.getFullYear();
-        let month = now.getMonth();
-        let lastDay = new Date(year, month + 1, 0).getDate();
-        let next = new Date(year, month, Math.min(day, lastDay));
-        if (next < today) {
-            month++;
-            if (month === 12) { month = 0; year++; }
-            lastDay = new Date(year, month + 1, 0).getDate();
-            next = new Date(year, month, Math.min(day, lastDay));
-        }
-        return Math.round((next - today) / (1000 * 60 * 60 * 24));
-    }
-    if (repeat === 'weekly') {
-        const start = new Date(event.date);
-        return (start.getDay() - today.getDay() + 7) % 7;
-    }
-    const target = new Date(event.date);
-    return Math.round((target - today) / (1000 * 60 * 60 * 24));
+const dateShort = (event) => {
+    const s = nextDateStr(event);
+    return `${s.slice(5, 7)}月${s.slice(8, 10)}日`;
 };
 
-const dateMonth = (event) => `${event.date.slice(5, 7)}月`;
-const dateDay = (event) => event.date.slice(8, 10);
-
-// 已共度天数（起始日期到今天）
-const elapsedDays = (event) => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const start = new Date(event.date);
-    return Math.round((today - start) / (1000 * 60 * 60 * 24));
+const dateBg = (event) => {
+    const c = colorOf(event.color);
+    return { background: `linear-gradient(135deg, ${c.from}, ${c.to})` };
 };
 
-// 周年数（仅每年重复且起始日在过去）
-const anniversaryText = (event) => {
-    if (repeatOf(event) !== 'yearly') return '';
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const startYear = Number(event.date.slice(0, 4));
-    const month = Number(event.date.slice(5, 7)) - 1;
-    const day = Number(event.date.slice(8, 10));
-    let years = now.getFullYear() - startYear;
-    // 今年纪念日尚未到则少一周年
-    if (new Date(now.getFullYear(), month, day) > today) {
-        years--;
-    }
-    if (years <= 0) return '';
-    return `第 ${years} 周年`;
-};
+const colorDot = (c) => ({ background: `linear-gradient(135deg, ${c.from}, ${c.to})` });
 
-const countText = (event) => {
-    const days = calcDays(event);
-    if (days === 0) return '就是今天';
-    if (days > 0) return `还有 ${days} 天`;
-    return `已过 ${Math.abs(days)} 天`;
-};
-
-const countClass = (event) => {
-    const days = calcDays(event);
-    if (days === 0) return 'today';
-    if (days > 0) return 'coming';
-    return 'passed';
+const remainOf = (event) => {
+    tick.value;
+    return formatRemain(event, new Date());
 };
 
 const comingCount = computed(() =>
     eventList.value.filter(e => calcDays(e) >= 0 && calcDays(e) <= 30).length
 );
+
+// 分类：重复 / 倒计时(不重复·未来) / 纪念日(不重复·过去)
+const groups = computed(() => {
+    const sort = (arr) => arr.sort((a, b) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        return calcDays(a) - calcDays(b);
+    });
+    const repeating = eventList.value.filter(e => repeatOf(e) !== 'none');
+    const countdown = eventList.value.filter(e => repeatOf(e) === 'none' && calcDays(e) >= 0);
+    const positive = eventList.value.filter(e => repeatOf(e) === 'none' && calcDays(e) < 0);
+    return [
+        { key: 'repeating', title: '重复纪念日', desc: '每年 / 每月 / 每周自动提醒', list: sort(repeating) },
+        { key: 'countdown', title: '倒计时', desc: '即将到来的重要日子', list: sort(countdown) },
+        { key: 'positive', title: '纪念日', desc: '已经过去的特别日子', list: sort(positive) },
+    ].filter(g => g.list.length > 0);
+});
 
 const onDateChange = (e) => {
     state.form.date = e.detail.value;
@@ -227,14 +254,35 @@ const openCreate = () => {
         name: '',
         date: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`,
         repeat: 'yearly',
+        icon: '❤️',
+        color: 'blue',
+        format: 'day',
+        pinned: false,
     };
     popupRef.value?.open();
 };
 
 const editEvent = (event) => {
     state.editing = event;
-    state.form = { name: event.name, date: event.date, repeat: repeatOf(event) };
+    state.form = {
+        name: event.name,
+        date: event.date,
+        repeat: repeatOf(event),
+        icon: event.icon || '❤️',
+        color: event.color || 'blue',
+        format: event.format || 'day',
+        pinned: !!event.pinned,
+    };
     popupRef.value?.open();
+};
+
+const editById = (id) => {
+    const event = storage.getEvents().find(e => e.id === id);
+    if (event) editEvent(event);
+};
+
+const openDetail = (event) => {
+    uni.navigateTo({ url: `/pages/tools/calendar/detail?id=${event.id}` });
 };
 
 const closePopup = () => {
@@ -244,7 +292,7 @@ const closePopup = () => {
 const saveEvent = () => {
     const name = state.form.name.trim();
     if (!name) {
-        uni.showToast({ title: '请输入事件名称', icon: 'none' });
+        uni.showToast({ title: '请输入纪念日名称', icon: 'none' });
         return;
     }
     if (!state.form.date) {
@@ -263,6 +311,10 @@ const saveEvent = () => {
             name,
             date: state.form.date,
             repeat: state.form.repeat,
+            icon: state.form.icon,
+            color: state.form.color,
+            format: state.form.format,
+            pinned: state.form.pinned,
             createdAt: Date.now(),
         });
     }
@@ -291,6 +343,21 @@ const deleteEvent = () => {
 
 onShow(() => {
     loadEvents();
+    uni.$off('editEvent');
+    uni.$on('editEvent', editById);
+    if (timer) clearInterval(timer);
+    timer = setInterval(() => { tick.value++; }, 60000);
+});
+
+onHide(() => {
+    if (timer) clearInterval(timer);
+    timer = null;
+});
+
+onUnload(() => {
+    uni.$off('editEvent');
+    if (timer) clearInterval(timer);
+    timer = null;
 });
 </script>
 
@@ -352,6 +419,28 @@ onShow(() => {
     }
 
     .event-list {
+        .event-group {
+            margin-bottom: 10rpx;
+
+            .group-header {
+                display: flex;
+                align-items: baseline;
+                margin: 30rpx 0 20rpx;
+
+                .group-title {
+                    font-size: 30rpx;
+                    font-weight: 700;
+                    color: var(--text-dark);
+                }
+
+                .group-desc {
+                    margin-left: 16rpx;
+                    font-size: 22rpx;
+                    color: var(--text-light);
+                }
+            }
+        }
+
         .event-card {
             display: flex;
             align-items: center;
@@ -365,21 +454,22 @@ onShow(() => {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                width: 100rpx;
-                padding: 16rpx 0;
+                width: 110rpx;
+                padding: 20rpx 0;
                 margin-right: 24rpx;
-                border-radius: 16rpx;
-                background: rgba(78, 140, 255, 0.08);
+                border-radius: 20rpx;
+                color: #FFFFFF;
+                flex-shrink: 0;
 
-                .date-month {
-                    font-size: 22rpx;
-                    color: var(--main-color);
+                .date-icon {
+                    font-size: 44rpx;
+                    line-height: 1.2;
                 }
 
-                .date-day {
-                    font-size: 40rpx;
-                    font-weight: 700;
-                    color: var(--main-color);
+                .date-text {
+                    margin-top: 8rpx;
+                    font-size: 22rpx;
+                    color: rgba(255, 255, 255, 0.95);
                 }
             }
 
@@ -398,6 +488,16 @@ onShow(() => {
                         overflow: hidden;
                         white-space: nowrap;
                         text-overflow: ellipsis;
+                    }
+
+                    .pin-tag {
+                        margin-left: 12rpx;
+                        padding: 4rpx 12rpx;
+                        font-size: 20rpx;
+                        color: #FFFFFF;
+                        background: #FF7E5F;
+                        border-radius: 16rpx;
+                        flex-shrink: 0;
                     }
 
                     .event-tag {
@@ -519,6 +619,47 @@ onShow(() => {
                     &.active {
                         color: #FFFFFF;
                         background: linear-gradient(135deg, var(--left-linear), var(--right-linear));
+                    }
+                }
+            }
+
+            .icon-options {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 16rpx;
+
+                .icon-option {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 76rpx;
+                    height: 76rpx;
+                    font-size: 40rpx;
+                    background: #F5F6FA;
+                    border-radius: 16rpx;
+                    border: 3rpx solid transparent;
+
+                    &.active {
+                        background: rgba(78, 140, 255, 0.1);
+                        border-color: var(--main-color);
+                    }
+                }
+            }
+
+            .color-options {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 20rpx;
+
+                .color-option {
+                    width: 64rpx;
+                    height: 64rpx;
+                    border-radius: 50%;
+                    border: 4rpx solid transparent;
+
+                    &.active {
+                        border-color: #FFFFFF;
+                        box-shadow: 0 0 0 4rpx var(--main-color);
                     }
                 }
             }
