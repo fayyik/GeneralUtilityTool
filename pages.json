@@ -56,6 +56,12 @@
             "style": {
                 "navigationBarTitleText": "图片拼接"
             }
+        },
+        {
+            "path": "pages/tools/image/grid",
+            "style": {
+                "navigationBarTitleText": "九宫格切图"
+            }
         }
     ],
     "tabBar": {

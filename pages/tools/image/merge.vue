@@ -316,65 +316,81 @@ const layoutHorizontal = (imgs, baseH = 1080) => {
     return { width: x, height: H, items };
 };
 
-// 正方形随机拼贴模板
+// 正方形随机拼贴模板：网格大小根据图片数量自适应
 const layoutRandom = (imgs) => {
     const SIZE = 1080;
-    const GRID = 6;
+    // 根据图片数量决定网格：2张→2x2，4张→2x2，9张→3x3，16张→4x4
+    const GRID = Math.max(1, Math.ceil(Math.sqrt(imgs.length)));
     const cell = SIZE / GRID;
-    const grid = Array.from({ length: GRID }, () => Array(GRID).fill(false));
-    const items = [];
-    const canPlace = (r, c, gw, gh) => {
-        for (let i = r; i < r + gh; i++) {
-            for (let j = c; j < c + gw; j++) {
-                if (grid[i][j]) return false;
+    // 单图直接铺满
+    if (imgs.length === 1) {
+        return {
+            width: SIZE,
+            height: SIZE,
+            items: [{ img: imgs[0].img, origW: imgs[0].origW, origH: imgs[0].origH, x: 0, y: 0, w: SIZE, h: SIZE }],
+        };
+    }
+    const maxSpan = Math.min(2, GRID);
+    // 放置图片：span 为 2 时每张随机占 1~2 格，为 1 时全部 1 格（保证放下）
+    const placeGrid = (span) => {
+        const g = Array.from({ length: GRID }, () => Array(GRID).fill(false));
+        const placed = [];
+        const canPlace = (r, c, gw, gh) => {
+            for (let i = r; i < r + gh; i++) {
+                for (let j = c; j < c + gw; j++) {
+                    if (g[i][j]) return false;
+                }
             }
-        }
-        return true;
-    };
-    const mark = (r, c, gw, gh) => {
-        for (let i = r; i < r + gh; i++) {
-            for (let j = c; j < c + gw; j++) {
-                grid[i][j] = true;
-            }
-        }
-    };
-    const findPlace = (gw, gh) => {
-        for (let attempt = 0; attempt < 300; attempt++) {
-            const c = Math.floor(Math.random() * (GRID - gw + 1));
-            const r = Math.floor(Math.random() * (GRID - gh + 1));
-            if (canPlace(r, c, gw, gh)) return { r, c };
-        }
-        return null;
-    };
-    const tryPlace = (img, gw, gh) => {
-        const p = findPlace(gw, gh);
-        if (p) {
-            mark(p.r, p.c, gw, gh);
-            items.push({ img: img.img, origW: img.origW, origH: img.origH, x: p.c * cell, y: p.r * cell, w: gw * cell, h: gh * cell });
             return true;
-        }
-        return false;
-    };
-    const order = shuffle(imgs);
-    order.forEach((img) => {
-        const gw = 1 + Math.floor(Math.random() * 2);
-        const gh = 1 + Math.floor(Math.random() * 2);
-        if (!tryPlace(img, gw, gh)) {
-            if (!tryPlace(img, 1, 1)) {
-                // 兜底：顺序找第一个空格
-                outer:
-                for (let r = 0; r < GRID; r++) {
-                    for (let c = 0; c < GRID; c++) {
-                        if (!grid[r][c]) {
-                            grid[r][c] = true;
-                            items.push({ img: img.img, origW: img.origW, origH: img.origH, x: c * cell, y: r * cell, w: cell, h: cell });
-                            break outer;
+        };
+        const mark = (r, c, gw, gh) => {
+            for (let i = r; i < r + gh; i++) {
+                for (let j = c; j < c + gw; j++) {
+                    g[i][j] = true;
+                }
+            }
+        };
+        const findPlace = (gw, gh) => {
+            for (let attempt = 0; attempt < 300; attempt++) {
+                const c = Math.floor(Math.random() * (GRID - gw + 1));
+                const r = Math.floor(Math.random() * (GRID - gh + 1));
+                if (canPlace(r, c, gw, gh)) return { r, c };
+            }
+            return null;
+        };
+        const tryPlace = (img, gw, gh) => {
+            const p = findPlace(gw, gh);
+            if (p) {
+                mark(p.r, p.c, gw, gh);
+                placed.push({ img: img.img, origW: img.origW, origH: img.origH, x: p.c * cell, y: p.r * cell, w: gw * cell, h: gh * cell });
+                return true;
+            }
+            return false;
+        };
+        shuffle(imgs).forEach((img) => {
+            const gw = span > 1 ? 1 + Math.floor(Math.random() * span) : 1;
+            const gh = span > 1 ? 1 + Math.floor(Math.random() * span) : 1;
+            if (!tryPlace(img, gw, gh)) {
+                if (!tryPlace(img, 1, 1)) {
+                    // 兜底：顺序找第一个空格
+                    outer:
+                    for (let r = 0; r < GRID; r++) {
+                        for (let c = 0; c < GRID; c++) {
+                            if (!g[r][c]) {
+                                g[r][c] = true;
+                                placed.push({ img: img.img, origW: img.origW, origH: img.origH, x: c * cell, y: r * cell, w: cell, h: cell });
+                                break outer;
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+        return placed;
+    };
+    let items = placeGrid(maxSpan);
+    // 跨度随机可能导致放不下，退回全部 1 格重新放置
+    if (items.length < imgs.length) items = placeGrid(1);
     return { width: SIZE, height: SIZE, items };
 };
 
@@ -613,6 +629,7 @@ const saveImage = () => {
             }
 
             &.outline {
+                flex: 1;
                 color: var(--main-color);
                 background: #FFFFFF;
                 border: 2rpx solid var(--main-color);
