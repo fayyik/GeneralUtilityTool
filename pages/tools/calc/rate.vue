@@ -49,7 +49,7 @@
                 <view class="tip">可点击汇率数字按实时行情修改</view>
                 <view class="rate-list">
                     <view class="rate-item" v-for="c in coins" :key="c">
-                        <view class="r-coin">{{ c }}</view>
+                        <view class="r-coin">{{ nameOf(c) }} {{ c }}</view>
                         <input
                             class="rate-input"
                             type="digit"
@@ -71,20 +71,37 @@ const { themeInfo } = useMainStore();
 
 import Navbar from '@/components/Navbar.vue';
 
+const CURRENCY_NAMES = {
+    CNY: '人民币',
+    USD: '美元',
+    EUR: '欧元',
+    JPY: '日元',
+    GBP: '英镑',
+    HKD: '港币',
+    KRW: '韩元',
+    SGD: '新加坡元',
+    AUD: '澳元',
+    CAD: '加元',
+    CHF: '瑞士法郎',
+    THB: '泰铢',
+};
+
 const DEFAULT_RATES = {
     CNY: 1,
-    USD: 7.13,
-    EUR: 7.79,
-    JPY: 0.048,
-    GBP: 9.05,
-    HKD: 0.914,
-    KRW: 0.0052,
-    SGD: 5.33,
-    AUD: 4.72,
-    CAD: 5.23,
-    CHF: 8.12,
-    THB: 0.2,
+    USD: 6.7854,
+    EUR: 7.8328,
+    JPY: 0.042445,
+    HKD: 0.86502,
+    GBP: 9.1586,
+    KRW: 0.0047893,
+    SGD: 5.2935,
+    AUD: 4.7915,
+    CAD: 4.8658,
+    CHF: 8.3334,
+    THB: 0.20403,
 };
+
+const nameOf = (c) => CURRENCY_NAMES[c] || c;
 
 const state = reactive({
     amount: '',
