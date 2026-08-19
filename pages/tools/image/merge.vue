@@ -17,7 +17,7 @@
             </view>
 
             <!-- 图片选择 -->
-            <view class="section-title">选择图片 <text class="tip">（长按拖动排序，最多 16 张）</text></view>
+            <view class="section-title">选择图片 <text class="tip">（长按拖动排序，最多 10 张）</text></view>
             <view class="pick-area">
                 <view
                     class="thumb"
@@ -53,14 +53,18 @@
 
             <!-- 预览 -->
             <view class="preview" v-if="merged">
-                <view class="section-title">预览</view>
+                <view class="section-title">预览（共 {{ previewImgs.length }} 张）</view>
                 <scroll-view scroll-x class="hscroll" v-if="state.mode === 'horizontal'">
-                    <image :src="previewImg" class="preview-img" :style="canvasStyle" mode="aspectFill"></image>
+                    <view class="hscroll-inner">
+                        <image v-for="(p, i) in previewImgs" :key="i" :src="p" class="preview-img" :style="canvasStyle" mode="aspectFill"></image>
+                    </view>
                 </scroll-view>
-                <image v-else :src="previewImg" class="preview-img" :style="canvasStyle" mode="aspectFill"></image>
-                <view class="btn save" @click="saveImage">
+                <view v-else class="vscroll">
+                    <image v-for="(p, i) in previewImgs" :key="i" :src="p" class="preview-img" :style="canvasStyle" mode="widthFix"></image>
+                </view>
+                <view class="btn save" @click="saveAll">
                     <uv-icon name="download" size="18" color="#FFFFFF"></uv-icon>
-                    保存到相册
+                    保存全部到相册（{{ previewImgs.length }} 张）
                 </view>
             </view>
         </view>
@@ -92,7 +96,7 @@ const state = reactive({
 });
 
 const merged = ref(false);
-const previewImg = ref('');
+const previewImgs = ref([]);
 
 const canvasOut = ref(null); // { width, height } 输出像素
 const sysInfo = uni.getSystemInfoSync();
@@ -106,14 +110,14 @@ const canvasStyle = computed(() => {
         const w = Math.round((availW * outW) / outH);
         return { width: `${w}px`, height: `${availW}px` };
     }
-    // 纵向/随机：宽度 = 屏幕宽，高度按比例（长图竖向滚动查看）
-    const h = Math.round((availW * outH) / outW);
-    return { width: `${availW}px`, height: `${h}px` };
+    // 纵向/随机：只固定宽度，高度由 widthFix 按图片比例自适应（完整显示不裁剪）
+    return { width: `${availW}px` };
 });
 
 const switchMode = (mode) => {
     state.mode = mode;
     merged.value = false;
+    previewImgs.value = [];
     canvasOut.value = null;
 };
 
@@ -137,6 +141,7 @@ const chooseImage = () => {
             const infos = await Promise.all(files.map(loadInfo));
             state.images.push(...infos);
             merged.value = false;
+            previewImgs.value = [];
             canvasOut.value = null;
         },
         fail: (err) => {
@@ -148,6 +153,7 @@ const chooseImage = () => {
                         const infos = await Promise.all(r.tempFilePaths.map(loadInfo));
                         state.images.push(...infos);
                         merged.value = false;
+                        previewImgs.value = [];
                         canvasOut.value = null;
                     },
                 });
@@ -159,6 +165,7 @@ const chooseImage = () => {
 const removeImage = (i) => {
     state.images.splice(i, 1);
     merged.value = false;
+    previewImgs.value = [];
     canvasOut.value = null;
 };
 
@@ -217,6 +224,7 @@ const onDragMove = (e) => {
 const endDrag = () => {
     dragIndex.value = -1;
     merged.value = false;
+    previewImgs.value = [];
     canvasOut.value = null;
 };
 
@@ -422,72 +430,81 @@ const doMerge = async () => {
     else layout = layoutVertical(meta);
 
     const dpr = uni.getSystemInfoSync().pixelRatio || 2;
-    // 目标物理尺寸 = 布局逻辑尺寸 × dpr
-    const targetW = Math.round(layout.width * dpr);
-    const targetH = Math.round(layout.height * dpr);
-    // 先按较大上限等比缩放（新机型支持更高，尽量大）
-    const MAX = 8192;
-    let s = Math.min(1, MAX / Math.max(targetW, targetH));
+    // 探测设备 canvas 实际上限（不再硬编码，新机型可达 16384+）
+    let limit = 32768;
     try {
-        canvas.width = Math.round(targetW * s);
-        canvas.height = Math.round(targetH * s);
-    } catch (e) { /* 忽略 */ }
-    // 设备可能截断超大画布，读取实际尺寸，按实际等比缩放
-    const fit = Math.min(canvas.width / (targetW * s), canvas.height / (targetH * s));
-    if (fit < 1) s = s * fit;
-    canvas.width = Math.round(targetW * s);
-    canvas.height = Math.round(targetH * s);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(s * dpr, s * dpr);
+        canvas.width = 32768;
+        canvas.height = 32768;
+        limit = Math.max(1, Math.min(canvas.width, canvas.height));
+    } catch (e) {
+        limit = 8192;
+    }
 
+    const exportCanvas = () =>
+        new Promise((resolve, reject) => {
+            uni.canvasToTempFilePath({ canvas, success: (res) => resolve(res.tempFilePath), fail: reject });
+        });
+
+    // 单张拼接：整幅图按设备上限等比缩放（不切段），尽量放大保证清晰
+    const coef = dpr;
+    let pxW = Math.round(layout.width * coef);
+    let pxH = Math.round(layout.height * coef);
+    const s = Math.min(1, limit / Math.max(pxW, pxH));
+    pxW = Math.round(pxW * s);
+    pxH = Math.round(pxH * s);
+    canvas.width = pxW;
+    canvas.height = pxH;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(coef * s, coef * s);
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, layout.width, layout.height);
     layout.items.forEach((item) => drawCover(ctx, item.img, item.origW, item.origH, item.x, item.y, item.w, item.h));
 
+    let tempPath;
+    try {
+        tempPath = await exportCanvas();
+    } catch (e) {
+        uni.hideLoading();
+        uni.showToast({ title: '生成失败', icon: 'none' });
+        return;
+    }
     canvasOut.value = { width: canvas.width, height: canvas.height };
-    // 导出为临时图片用于预览与保存
-    uni.canvasToTempFilePath({
-        canvas,
-        success: (res) => {
-            previewImg.value = res.tempFilePath;
-            merged.value = true;
-            uni.hideLoading();
-        },
-        fail: () => {
-            uni.hideLoading();
-            uni.showToast({ title: '生成失败', icon: 'none' });
-        },
-    });
+    previewImgs.value = [tempPath];
+    merged.value = true;
+    uni.hideLoading();
 };
 
-const saveImage = () => {
-    if (!previewImg.value) {
+const saveAll = async () => {
+    if (!previewImgs.value.length) {
         uni.showToast({ title: '请先生成拼接图', icon: 'none' });
         return;
     }
-    uni.showLoading({ title: '保存中' });
-    uni.saveImageToPhotosAlbum({
-        filePath: previewImg.value,
-        success: () => {
-            uni.hideLoading();
-            uni.showToast({ title: '已保存到相册', icon: 'success' });
-        },
-        fail: (err) => {
-            uni.hideLoading();
-            if (String(err.errMsg || '').includes('auth')) {
-                uni.showModal({
-                    title: '提示',
-                    content: '需要相册权限才能保存图片，请在设置中开启',
-                    confirmText: '去设置',
-                    success: (r) => {
-                        if (r.confirm) uni.openSetting();
-                    },
-                });
-            } else {
-                uni.showToast({ title: '保存失败', icon: 'none' });
-            }
-        },
-    });
+    uni.showLoading({ title: '保存中 0/' + previewImgs.value.length });
+    for (let i = 0; i < previewImgs.value.length; i++) {
+        await new Promise((resolve) => {
+            uni.saveImageToPhotosAlbum({
+                filePath: previewImgs.value[i],
+                success: () => resolve(true),
+                fail: (err) => {
+                    if (String(err.errMsg || '').includes('auth')) {
+                        uni.showModal({
+                            title: '提示',
+                            content: '需要相册权限才能保存图片，请在设置中开启',
+                            confirmText: '去设置',
+                            success: (r) => {
+                                if (r.confirm) uni.openSetting();
+                            },
+                        });
+                    } else {
+                        uni.showToast({ title: `第 ${i + 1} 张保存失败`, icon: 'none' });
+                    }
+                    resolve(false);
+                },
+            });
+        });
+    }
+    uni.hideLoading();
+    uni.showToast({ title: '已全部保存', icon: 'success' });
 };
 </script>
 
@@ -644,9 +661,20 @@ const saveImage = () => {
             width: 100%;
             white-space: nowrap;
 
+            .hscroll-inner {
+                display: inline-flex;
+            }
+
             .preview-img {
                 display: inline-block;
                 vertical-align: top;
+                flex-shrink: 0;
+            }
+        }
+
+        .vscroll {
+            .preview-img {
+                margin-bottom: 20rpx;
             }
         }
 
