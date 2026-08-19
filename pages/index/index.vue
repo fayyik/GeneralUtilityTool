@@ -71,9 +71,22 @@ const toolGroups = [
     },
     {
         name: '计算工具',
-        desc: '计算 · 估算',
+        desc: '换算 · 健康',
         tools: [
-            { name: '退休计算器', desc: '退休倒计时', icon: 'edit-pen', color: '#FFFFFF', bg: 'linear-gradient(135deg, #5CC8FF, #2E9BFF)', url: '/pages/tools/retirement/index', implemented: false },
+            { name: '单位换算', desc: '长度重量温度', icon: 'sort', color: '#FFFFFF', bg: 'linear-gradient(135deg, #5CC8FF, #2E9BFF)', url: '/pages/tools/calc/unit', implemented: true },
+            { name: '汇率换算', desc: '汇率查询', icon: 'red-packet', color: '#FFFFFF', bg: 'linear-gradient(135deg, #FFD08A, #FFA94D)', url: '/pages/tools/calc/rate', implemented: true },
+            { name: 'BMI 计算', desc: '体质指数', icon: 'heart-fill', color: '#FFFFFF', bg: 'linear-gradient(135deg, #FF8FB1, #FF5E88)', url: '/pages/tools/calc/bmi', implemented: true },
+            { name: '健康指标', desc: '体重标准', icon: 'fire-fill', color: '#FFFFFF', bg: 'linear-gradient(135deg, #34D399, #059669)', url: '/pages/tools/calc/health', implemented: true },
+        ],
+    },
+    {
+        name: '趣味娱乐',
+        desc: '随机 · 游戏',
+        tools: [
+            { name: '抽签随机', desc: '随机决定', icon: 'refresh', color: '#FFFFFF', bg: 'linear-gradient(135deg, #A18CD1, #8E6CC4)', url: '/pages/tools/fun/draw', implemented: false },
+            { name: '骰子', desc: '摇骰子', icon: 'more-dot-fill', color: '#FFFFFF', bg: 'linear-gradient(135deg, #FFB199, #FF7E5F)', url: '/pages/tools/fun/dice', implemented: false },
+            { name: '亲戚称呼', desc: '称呼计算器', icon: 'account-fill', color: '#FFFFFF', bg: 'linear-gradient(135deg, #5CC8FF, #2E9BFF)', url: '/pages/tools/fun/relation', implemented: false },
+            { name: '斗地主记牌', desc: '记牌器', icon: 'coupon', color: '#FFFFFF', bg: 'linear-gradient(135deg, #8B7CF6, #6C5CE7)', url: '/pages/tools/fun/card', implemented: false },
         ],
     },
 ];

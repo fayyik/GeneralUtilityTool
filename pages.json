@@ -62,6 +62,30 @@
             "style": {
                 "navigationBarTitleText": "九宫格切图"
             }
+        },
+        {
+            "path": "pages/tools/calc/unit",
+            "style": {
+                "navigationBarTitleText": "单位换算"
+            }
+        },
+        {
+            "path": "pages/tools/calc/rate",
+            "style": {
+                "navigationBarTitleText": "汇率换算"
+            }
+        },
+        {
+            "path": "pages/tools/calc/bmi",
+            "style": {
+                "navigationBarTitleText": "BMI 计算"
+            }
+        },
+        {
+            "path": "pages/tools/calc/health",
+            "style": {
+                "navigationBarTitleText": "健康指标"
+            }
         }
     ],
     "tabBar": {
